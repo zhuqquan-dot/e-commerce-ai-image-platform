@@ -1,0 +1,632 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  phone        String?
+  email        String?
+  passwordHash String
+  name         String   @default("")
+  status       String   @default("active")
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships      Member[]
+  ownedWorkspaces  Workspace[]
+}
+
+model Member {
+  id          String   @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        String   @default("operator")
+  status      String   @default("invited")
+  invitedBy   String?
+  joinedAt    DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model Workspace {
+  id                String    @id
+  name              String
+  ownerUserId       String
+  type              String    @default("standard")
+  planId            String?
+  monthlyCredits    Int       @default(0)
+  fuelCredits       Int       @default(0)
+  channelPartnerId  String?
+  subscriptionStatus String   @default("trial")
+  quotaResetAt      DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  owner          User           @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  clientSpaces   ClientSpace[]
+  members        Member[]
+  plan           Plan?          @relation(fields: [planId], references: [id])
+  channelPartner ChannelPartner? @relation(fields: [channelPartnerId], references: [id])
+  subscriptions  Subscription[]
+  orders         Order[]
+}
+
+model ClientSpace {
+  id              String   @id @default(cuid())
+  workspaceId     String
+  clientName      String
+  brandName       String
+  storeGroupName  String?
+  region          String?
+  defaultLanguage String?
+  targetMarkets   String   @default("[]")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  brandPacks  BrandPack[]
+  seriesPacks SeriesPack[]
+}
+
+model BrandPack {
+  id                  String   @id @default(cuid())
+  clientSpaceId       String
+  brandName           String
+  brandPrimaryColor   String?
+  brandSecondaryColor String?
+  brandFontPreference String?
+  brandTone           String?
+  brandForbiddenWords String   @default("[]")
+  brandVisualBoundary String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  clientSpace ClientSpace  @relation(fields: [clientSpaceId], references: [id], onDelete: Cascade)
+  seriesPacks SeriesPack[]
+}
+
+model SeriesPack {
+  id                      String   @id @default(cuid())
+  clientSpaceId           String
+  brandPackId             String
+  seriesName              String
+  styleLockText           String?
+  fixedPalette            String   @default("[]")
+  backgroundSystem        String?
+  lightingSystem          String?
+  defaultBundleStructure  String?
+  defaultReviewThreshold  String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  clientSpace ClientSpace @relation(fields: [clientSpaceId], references: [id], onDelete: Cascade)
+  brandPack   BrandPack   @relation(fields: [brandPackId], references: [id], onDelete: Cascade)
+}
+
+model PlatformRulePack {
+  id                             String   @id @default(cuid())
+  platformName                   String   @unique
+  platformRegion                 String
+  platformType                   String?
+  defaultLanguage                String?
+  status                         String   @default("active")
+  maxImages                      Int
+  mainImageRatio                 String
+  mainImageSize                  String
+  allowedFormats                 String   @default("[]")
+  maxFileSizeMb                  Float
+  whiteBackgroundRequired        Boolean  @default(false)
+  textAllowedOnMainImage         Boolean  @default(true)
+  watermarkAllowed               Boolean  @default(false)
+  borderAllowed                  Boolean  @default(false)
+  logoAllowed                    Boolean  @default(false)
+  maxOverlayTextLength           Int?
+  supportedLanguagesForPromptText String  @default("[]")
+  supportedSlots                 String   @default("[]")
+  forbiddenWords                 String   @default("[]")
+  absoluteTermsForbidden         Boolean  @default(false)
+  medicalTermsForbidden          Boolean  @default(false)
+  exportFileNamingRule           String?
+  whiteBackgroundToleranceR      Int      @default(250)
+  whiteBackgroundToleranceG      Int      @default(250)
+  whiteBackgroundToleranceB      Int      @default(250)
+  textConstraints                String   @default("{}")
+  forbiddenElements              String   @default("[]")
+  priceOverlayZone               String   @default("{}")
+  exportDirectoryStructure       String   @default("{}")
+  exportSortOrder                String   @default("[]")
+  deliveryNotes                  String   @default("{}")
+  versions                       String   @default("[]")
+  createdAt                      DateTime @default(now())
+  updatedAt                      DateTime @updatedAt
+
+  generationTasks GenerationTask[]
+}
+
+model PlatformRuleVersion {
+  id           String   @id @default(cuid())
+  platformName String
+  version      String
+  snapshot     String
+  changedBy    String   @default("system")
+  changeNote   String   @default("")
+  createdAt    DateTime @default(now())
+}
+
+model ProviderConfig {
+  id        String   @id @default(cuid())
+  name      String
+  type      String
+  apiKey    String
+  baseURL   String?
+  priority  Int      @default(1)
+  isActive  Boolean  @default(false)
+  config    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Product {
+  id                       String   @id @default(cuid())
+  clientSpaceId            String
+  brandPackId              String   @default("")
+  seriesPackId             String   @default("")
+  productName              String
+  category                 String   @default("")
+  sku                      String   @default("")
+  spu                      String   @default("")
+  primaryLanguage          String   @default("zh-CN")
+  marketRegion             String   @default("CN")
+  rtlRequired              Boolean  @default(false)
+  material                 String   @default("")
+  color                    String   @default("")
+  size                     String   @default("")
+  weight                   String   @default("")
+  capacity                 String   @default("")
+  model                    String   @default("")
+  compatibleModel          String   @default("")
+  packageContents          String   @default("")
+  coreSellingPoint1        String   @default("")
+  coreSellingPoint2        String   @default("")
+  coreSellingPoint3        String   @default("")
+  differentiation          String   @default("")
+  targetAudience           String   @default("")
+  useCase                  String   @default("")
+  painPoint                String   @default("")
+  publicProofAssets        String   @default("")
+  forbiddenClaims          String   @default("")
+  restrictedCopy           String   @default("")
+  frontRefImage            String   @default("")
+  angle45RefImage          String   @default("")
+  sideRefImage             String   @default("")
+  backRefImage             String   @default("")
+  topRefImage              String   @default("")
+  detailRefImages          String   @default("[]")
+  packagingRefImage        String   @default("")
+  accessoryRefImage        String   @default("")
+  logoRefImage             String   @default("")
+  mainColor                String   @default("")
+  secondaryColor           String   @default("")
+  shapeType                String   @default("")
+  edgeFeature              String   @default("")
+  surfaceMaterial          String   @default("")
+  textureFeature           String   @default("")
+  logoPosition             String   @default("")
+  labelPosition            String   @default("")
+  buttonPortPosition       String   @default("")
+  structurePartition       String   @default("")
+  accessoryCount           String   @default("")
+  mustNotChangeFeatures    String   @default("[]")
+  mustNotDisappearFeatures String   @default("[]")
+  mustNotAddFeatures       String   @default("[]")
+  allowMinorVariationFields String  @default("[]")
+  inputMode                String   @default("quick")
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  generationTasks GenerationTask[]
+}
+
+model Project {
+  id                String   @id @default(cuid())
+  workspaceId       String   @default("")
+  productId         String
+  projectName       String   @default("")
+  clientSpaceId     String   @default("")
+  creatorId         String?
+  parentProjectId   String?
+  projectType       String   @default("single_product_single_platform")
+  status            String   @default("draft")
+  selectedPlatforms String   @default("[]")
+  seriesPackId      String?
+  inputMode         String   @default("quick")
+  bundleType        String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  parent          Project?  @relation("ProjectHierarchy", fields: [parentProjectId], references: [id], onDelete: SetNull)
+  children        Project[] @relation("ProjectHierarchy")
+  bundlePlans     BundlePlan[]
+  exportPacks     ExportPack[]
+  generationTasks GenerationTask[]
+}
+
+model BundlePlan {
+  id        String   @id @default(cuid())
+  projectId String
+  platform  String
+  status    String   @default("draft")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  bundleSlots  BundleSlot[]
+}
+
+model BundleSlot {
+  id                   String   @id @default(cuid())
+  bundlePlanId         String
+  slotType             String
+  isAnchor             Boolean  @default(false)
+  isRequired           Boolean  @default(true)
+  sequenceOrder        Int
+  exportNameSuggestion String   @default("")
+  ruleRefs             String   @default("[]")
+  warnings             String   @default("[]")
+  createdAt            DateTime @default(now())
+
+  bundlePlan      BundlePlan        @relation(fields: [bundlePlanId], references: [id], onDelete: Cascade)
+  generationTasks GenerationTask[]
+}
+
+model GenerationTask {
+  id             String   @id @default(cuid())
+  projectId      String
+  productId      String
+  platformPackId String
+  slotCode       String
+  bundleSlotId   String
+  status         String   @default("pending")
+  creditCost     Int      @default(1)
+  retryCount     Int      @default(0)
+  manualRequired Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  bundleSlot       BundleSlot        @relation(fields: [bundleSlotId], references: [id], onDelete: Cascade)
+  project          Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  product          Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  platformRulePack PlatformRulePack  @relation(fields: [platformPackId], references: [id], onDelete: Cascade)
+  attempts         GenerationAttempt[]
+  candidateAssets  CandidateAsset[]
+  qcResults        QcResult[]
+  reviewRecords    ReviewRecord[]
+}
+
+model GenerationAttempt {
+  id               String   @id @default(cuid())
+  taskId           String
+  providerConfigId String?
+  status           String   @default("created")
+  generationSpec   String?
+  promptText       String?
+  errorMessage     String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  task             GenerationTask    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  candidateAssets  CandidateAsset[]
+}
+
+model CandidateAsset {
+  id            String   @id @default(cuid())
+  attemptId     String
+  taskId        String?
+  localPath     String
+  remoteUrl     String?
+  width         Int      @default(0)
+  height        Int      @default(0)
+  format        String   @default("jpg")
+  fileSizeBytes Int      @default(0)
+  imageUrl      String?
+  createdAt     DateTime @default(now())
+
+  attempt GenerationAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  task    GenerationTask?   @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  exportMappings ExportMapping[]
+}
+
+model CreditRecord {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  taskId       String?
+  amount       Int
+  balanceAfter Int
+  reason       String
+  createdAt    DateTime @default(now())
+}
+
+model QcResult {
+  id                       String   @id @default(cuid())
+  taskId                   String
+  consistencyScore         Int      @default(0)
+  styleScore               Int      @default(0)
+  complianceScore          Int      @default(0)
+  overallGrade             String   @default("N/A")
+  reasons                  String   @default("[]")
+  riskTags                 String   @default("[]")
+  suggestedAction          String   @default("review")
+  aiDetectionInputReserved String?
+  createdAt                DateTime @default(now())
+
+  task GenerationTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model ReviewRecord {
+  id         String   @id @default(cuid())
+  taskId     String
+  action     String
+  comment    String   @default("")
+  reviewerId String?
+  createdAt  DateTime @default(now())
+
+  task GenerationTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model ExportPack {
+  id             String    @id @default(cuid())
+  projectId      String
+  clientSpaceId  String
+  exportScope    String
+  platformPackId String?
+  status         String    @default("generating")
+  fileCount      Int       @default(0)
+  fileUrl        String?
+  generatedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  project  Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  mappings ExportMapping[]
+  manifest ExportManifest[]
+}
+
+model ExportMapping {
+  id               String   @id @default(cuid())
+  exportPackId     String
+  candidateAssetId String
+  originalFileName String
+  exportedFileName String
+  slotType         String
+  createdAt        DateTime @default(now())
+
+  exportPack     ExportPack     @relation(fields: [exportPackId], references: [id], onDelete: Cascade)
+  candidateAsset CandidateAsset @relation(fields: [candidateAssetId], references: [id], onDelete: Cascade)
+}
+
+model ExportManifest {
+  id              String   @id @default(cuid())
+  exportPackId    String
+  manifestContent String
+  createdAt       DateTime @default(now())
+
+  exportPack ExportPack @relation(fields: [exportPackId], references: [id], onDelete: Cascade)
+}
+
+model Plan {
+  id                    String   @id @default(cuid())
+  name                  String
+  monthlyPrice          Int      @default(0)
+  yearlyPrice           Int      @default(0)
+  monthlyCredits        Int      @default(0)
+  memberLimit           Int      @default(1)
+  clientSpaceLimit      Int      @default(1)
+  brandPackLimit        Int      @default(1)
+  seriesPackLimit       Int      @default(3)
+  projectLimit          Int      @default(5)
+  exportLimit           Int      @default(10)
+  batchEnabled          Boolean  @default(false)
+  multiPlatformEnabled  Boolean  @default(false)
+  reviewEnabled         Boolean  @default(true)
+  exportEnabled         Boolean  @default(true)
+  yearlyDiscount        Float    @default(0.0)
+  creditCarryOverRatio  Float    @default(0.0)
+  displayOrder          Int      @default(0)
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  workspaces    Workspace[]
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id          String   @id @default(cuid())
+  workspaceId String
+  planId      String
+  period      String   @default("monthly")
+  status      String   @default("active")
+  startAt     DateTime
+  endAt       DateTime
+  autoRenew   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  plan      Plan      @relation(fields: [planId], references: [id])
+}
+
+model Order {
+  id            String    @id @default(cuid())
+  orderNo       String    @unique
+  workspaceId   String
+  type          String    @default("subscription")
+  amount        Int       @default(0)
+  planId        String?
+  fuelPackId    String?
+  status        String    @default("unpaid")
+  paymentMethod String?
+  paidAt        DateTime?
+  createdAt     DateTime  @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+}
+
+model FuelPack {
+  id           String   @id @default(cuid())
+  name         String
+  credits      Int
+  price        Int
+  validityDays Int      @default(30)
+  displayOrder Int      @default(0)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model ChannelPartner {
+  id          String   @id @default(cuid())
+  name        String
+  level       Int      @default(1)
+  discountRate Float   @default(1.0)
+  status      String   @default("active")
+  contactInfo String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspaces Workspace[]
+}
+
+model Recommendation {
+  id          String   @id @default(cuid())
+  workspaceId String
+  projectId   String?
+  type        String
+  context     String   @default("{}")
+  content     String   @default("{}")
+  basis       String   @default("")
+  isAdopted   Boolean  @default(false)
+  adoptedAt   DateTime?
+  createdAt   DateTime @default(now())
+}
+
+model StrategySuggestion {
+  id             String   @id @default(cuid())
+  workspaceId    String
+  projectId      String?
+  platformId     String?
+  category       String   @default("")
+  suggestionType String
+  content        String   @default("{}")
+  basis          String   @default("")
+  isAdopted      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+}
+
+model PerformanceFeedback {
+  id           String   @id @default(cuid())
+  workspaceId  String
+  exportPackId String?
+  projectId    String?
+  platformId   String?
+  impressions  Int      @default(0)
+  clicks       Int      @default(0)
+  conversions  Int      @default(0)
+  rating       Int      @default(0)
+  source       String   @default("manual")
+  notes        String   @default("")
+  createdAt    DateTime @default(now())
+}
+
+model OptimizationSuggestion {
+  id             String    @id @default(cuid())
+  workspaceId    String
+  projectId      String
+  taskId         String?
+  suggestionType String
+  content        String    @default("{}")
+  priority       String    @default("medium")
+  isAdopted      Boolean   @default(false)
+  adoptedAt      DateTime?
+  createdAt      DateTime  @default(now())
+}
+
+model Template {
+  id                String   @id @default(cuid())
+  workspaceId       String
+  name              String
+  type              String
+  platform          String   @default("")
+  category          String   @default("")
+  sourceProjectId   String?
+  structureSnapshot String   @default("{}")
+  visibility        String   @default("workspace")
+  usageCount        Int      @default(0)
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  versions TemplateVersion[]
+}
+
+model TemplateVersion {
+  id                String   @id @default(cuid())
+  templateId        String
+  version           Int      @default(1)
+  structureSnapshot String   @default("{}")
+  changelog         String   @default("")
+  createdAt         DateTime @default(now())
+
+  template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+}
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  workspaceId String
+  name        String
+  keyHash     String
+  keyPrefix   String
+  status      String    @default("active")
+  rateLimit   Int       @default(100)
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  callLogs ApiCallLog[]
+}
+
+model ApiCallLog {
+  id         String   @id @default(cuid())
+  apiKeyId   String
+  endpoint   String
+  method     String
+  statusCode Int
+  ip         String   @default("")
+  userAgent  String   @default("")
+  createdAt  DateTime @default(now())
+
+  apiKey ApiKey @relation(fields: [apiKeyId], references: [id], onDelete: Cascade)
+}
+
+model PluginRegistry {
+  id                  String   @id @default(cuid())
+  name                String
+  description         String   @default("")
+  entryRoute          String   @default("")
+  lifecycleHooks      String   @default("[]")
+  requiredPermissions String   @default("[]")
+  status              String   @default("inactive")
+  version             String   @default("1.0.0")
+  lastExecutedAt      DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
