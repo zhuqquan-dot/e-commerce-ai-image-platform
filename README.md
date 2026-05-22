@@ -1,8 +1,6 @@
 # 🛒 E-commerce AI Image Generation Platform
 
-<p align="center">
-  <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Modern%20minimalist%20logo%20for%20AI%20e-commerce%20platform%2C%20shopping%20bag%20icon%20with%20AI%20sparkle%2C%20gradient%20blue%20to%20purple%2C%20clean%20white%20background%2C%20professional%20tech%20style&image_size=square_hd" alt="E-commerce AI Platform Logo" width="120" height="120">
-</p>
+
 
 <p align="center">
   <strong>A production-grade AI-powered platform for batch-generating e-commerce product images with quality control and multi-platform export</strong>
