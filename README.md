@@ -513,10 +513,9 @@ We love feature ideas! Please:
 
 Made with ❤️ for e-commerce teams worldwide
 
-<!-- 这一行是新增的：自动显示星数的徽章 -->
+
 [![GitHub stars](https://img.shields.io/github/stars/zhuqquan-dot/e-commerce-ai-image-platform?style=social)](https://github.com/zhuqquan-dot/e-commerce-ai-image-platform/stargazers)
 
-<!-- 这是你原本的星数历史图表，我已经帮你替换了正确的用户名 -->
 [![Star History Chart](https://api.star-history.com/svg?repos=zhuqquan-dot/e-commerce-ai-image-platform&type=Date)](https://star-history.com/#zhuqquan-dot/e-commerce-ai-image-platform&Date)
 
 </div>
